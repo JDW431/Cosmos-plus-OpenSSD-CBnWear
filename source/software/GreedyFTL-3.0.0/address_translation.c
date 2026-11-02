@@ -700,7 +700,7 @@ unsigned int FindFreeVirtualSlice()
 }
 
 
-unsigned int FindFreeVirtualSliceForGc(unsigned int copyTargetDieNo, unsigned int victimBlockNo)
+unsigned int FindFreeVirtualSliceForGc(unsigned int copyTargetDieNo, const unsigned int* victimBlockNo, unsigned short victimCount, unsigned int age)
 {
 	unsigned int currentBlock, virtualSliceAddr, dieNo;
 
