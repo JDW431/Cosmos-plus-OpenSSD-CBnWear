@@ -136,6 +136,7 @@ typedef struct _VIRTUAL_BLOCK_ENTRY {
 	unsigned int eraseCnt : 16;
 	unsigned int prevBlock : 16;
 	unsigned int nextBlock :16;
+	unsigned int mtime;
 } VIRTUAL_BLOCK_ENTRY, *P_VIRTUAL_BLOCK_ENTRY;
 
 typedef struct _VIRTUAL_BLOCK_MAP {
@@ -213,5 +214,6 @@ extern P_BAD_BLOCK_TABLE_INFO_MAP bbtInfoMapPtr;
 
 extern unsigned char sliceAllocationTargetDie;
 extern unsigned int mbPerbadBlockSpace;
+extern unsigned int currentPageWrite;
 
 #endif /* ADDRESS_TRANSLATION_H_ */
