@@ -58,7 +58,7 @@ P_BAD_BLOCK_TABLE_INFO_MAP bbtInfoMapPtr;
 
 unsigned char sliceAllocationTargetDie;
 unsigned int mbPerbadBlockSpace;
-
+unsigned int currentPageWrite = 0;
 
 void InitAddressMap()
 {
@@ -229,6 +229,7 @@ void InitBlockMap()
 			virtualBlockMapPtr->block[dieNo][virtualBlockNo].invalidSliceCnt = 0;
 			virtualBlockMapPtr->block[dieNo][virtualBlockNo].currentPage = 0;
 			virtualBlockMapPtr->block[dieNo][virtualBlockNo].eraseCnt = 0;
+			virtualBlockMapPtr->block[dieNo][virtualBlockNo].mtime = 0;
 
 			if(virtualBlockMapPtr->block[dieNo][virtualBlockNo].bad)
 			{
@@ -799,6 +800,7 @@ void EraseBlock(unsigned int dieNo, unsigned int blockNo)
 	virtualBlockMapPtr->block[dieNo][blockNo].eraseCnt++;
 	virtualBlockMapPtr->block[dieNo][blockNo].invalidSliceCnt = 0;
 	virtualBlockMapPtr->block[dieNo][blockNo].currentPage = 0;
+	virtualBlockMapPtr->block[dieNo][blockNo].mtime = 0;
 
 	PutToFbList(dieNo, blockNo);
 
