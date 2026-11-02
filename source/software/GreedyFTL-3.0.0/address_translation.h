@@ -192,7 +192,12 @@ void InitBlockDieMap();
 unsigned int AddrTransRead(unsigned int logicalSliceAddr);
 unsigned int AddrTransWrite(unsigned int logicalSliceAddr);
 unsigned int FindFreeVirtualSlice();
-unsigned int FindFreeVirtualSliceForGc(unsigned int copyTargetDieNo, unsigned int victimBlockNo);
+unsigned int FindFreeVirtualSliceForGc(
+	unsigned int copyTargetDieNo,		// Destination die number for GC
+	const unsigned int* victimBlockNo,	// Array of selected victim block numbers
+	unsigned short victimCount,			// Number of selected victim blocks
+	unsigned int age					// Age of the current GC data
+);
 unsigned int FindDieForFreeSliceAllocation();
 
 void InvalidateOldVsa(unsigned int logicalSliceAddr);
