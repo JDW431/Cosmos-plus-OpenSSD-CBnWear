@@ -158,6 +158,7 @@ typedef struct _SSD_REQ_FORMAT
 	unsigned int nvmeCmdSlotTag : 16;
 
 	unsigned int logicalSliceAddr;
+	unsigned int writeStamp;
 
 	REQ_OPTION reqOpt;
 	DATA_BUF_INFO dataBufInfo;
