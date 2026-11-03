@@ -668,26 +668,21 @@ unsigned int FindFreeVirtualSlice()
 
 	if(virtualBlockMapPtr->block[dieNo][currentBlock].currentPage == USER_PAGES_PER_BLOCK)
 	{
-		currentBlock = GetFromFbList(dieNo, GET_FREE_BLOCK_NORMAL);
-
-		if(currentBlock != BLOCK_FAIL)
-			virtualDieMapPtr->die[dieNo].currentBlock = currentBlock;
-		else
-		{
+		if(virtualDieMapPtr->die[dieNo].freeBlockCnt <= GC_TRIGGER_FREE_BLOCK_COUNT)
 			GarbageCollection(dieNo);
-			currentBlock = virtualDieMapPtr->die[dieNo].currentBlock;
 
-			if(virtualBlockMapPtr->block[dieNo][currentBlock].currentPage == USER_PAGES_PER_BLOCK)
-			{
-				currentBlock = GetFromFbList(dieNo, GET_FREE_BLOCK_NORMAL);
-				if(currentBlock != BLOCK_FAIL)
-					virtualDieMapPtr->die[dieNo].currentBlock = currentBlock;
-				else
-					assert(!"[WARNING] There is no available block [WARNING]");
-			}
-			else if(virtualBlockMapPtr->block[dieNo][currentBlock].currentPage > USER_PAGES_PER_BLOCK)
-				assert(!"[WARNING] Current page management fail [WARNING]");
+		currentBlock = virtualDieMapPtr->die[dieNo].currentBlock;
+
+		if(virtualBlockMapPtr->block[dieNo][currentBlock].currentPage == USER_PAGES_PER_BLOCK)
+		{
+			currentBlock = GetFromFbList(dieNo, GET_FREE_BLOCK_NORMAL);
+			if(currentBlock != BLOCK_FAIL)
+				virtualDieMapPtr->die[dieNo].currentBlock = currentBlock;
+			else
+				assert(!"[WARNING] There is no available block [WARNING]");
 		}
+		else if(virtualBlockMapPtr->block[dieNo][currentBlock].currentPage > USER_PAGES_PER_BLOCK)
+			assert(!"[WARNING] Current page management fail [WARNING]");
 	}
 	else if(virtualBlockMapPtr->block[dieNo][currentBlock].currentPage > USER_PAGES_PER_BLOCK)
 		assert(!"[WARNING] Current page management fail [WARNING]");
