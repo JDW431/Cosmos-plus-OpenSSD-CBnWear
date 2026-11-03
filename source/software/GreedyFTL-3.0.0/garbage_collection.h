@@ -46,6 +46,7 @@
 
 #ifndef GARBAGE_COLLECTION_H_
 #define GARBAGE_COLLECTION_H_
+#define CB_SCORE_SCALE 1024ULL
 
 #include "ftl_config.h"
 
@@ -64,6 +65,8 @@ void GarbageCollection(unsigned int dieNo);
 void PutToGcVictimList(unsigned int dieNo, unsigned int blockNo, unsigned int invalidSliceCnt);
 unsigned int GetFromGcVictimList(unsigned int dieNo);
 void SelectiveGetFromGcVictimList(unsigned int dieNo, unsigned int blockNo);
+
+unsigned long long getCBScore(unsigned int dieNo, unsigned int blockNo);
 
 extern P_GC_VICTIM_MAP gcVictimMapPtr;
 extern unsigned int gcTriggered;
