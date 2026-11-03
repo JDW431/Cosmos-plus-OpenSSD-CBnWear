@@ -74,6 +74,7 @@ void InitDataBuf()
 		dataBufHashTablePtr->dataBufHash[bufEntry].tailEntry = DATA_BUF_NONE;
 		dataBufMapPtr->dataBuf[bufEntry].hashPrevEntry = DATA_BUF_NONE;
 		dataBufMapPtr->dataBuf[bufEntry].hashNextEntry = DATA_BUF_NONE;
+		dataBufMapPtr->dataBuf[bufEntry].writeStamp = 0;
 	}
 
 	dataBufMapPtr->dataBuf[0].prevEntry = DATA_BUF_NONE;
