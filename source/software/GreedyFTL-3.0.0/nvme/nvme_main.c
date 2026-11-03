@@ -68,6 +68,37 @@
 
 #include "../memory_map.h"
 
+/* Enable only when the SDK BSP maps stdin/stdout to the same PS UART. */
+#ifdef METADATA_UART_PS
+#include "xuartps_hw.h"
+#include "../metadata_export.h"
+#include "../address_translation.h"
+static MetadataExport metadataScan;
+
+static void WriteMetadataLine(const char *line)
+{
+    xil_printf("%s", line);
+}
+
+static int ReadBlockAge(unsigned int die, unsigned int block, unsigned int *age)
+{
+    const VIRTUAL_BLOCK_ENTRY *entry = &virtualBlockMapPtr->block[die][block];
+
+    if (entry->bad || entry->free || entry->mtime == 0)
+        return 0;
+
+    *age = currentPageWrite - entry->mtime;
+    return 1;
+}
+
+static void PollMetadataUart(void)
+{
+    if (XUartPs_IsReceiveData(STDIN_BASEADDRESS))
+        MetadataReceiveByte(&metadataScan, XUartPs_RecvByte(STDIN_BASEADDRESS), WriteMetadataLine);
+    MetadataStep(&metadataScan, ReadBlockAge, WriteMetadataLine);
+}
+#endif
+
 volatile NVME_CONTEXT g_nvmeTask;
 
 void nvme_main()
@@ -179,6 +210,9 @@ void nvme_main()
 			CheckDoneNvmeDmaReq();
 			SchedulingNandReq();
 		}
+#ifdef METADATA_UART_PS
+		PollMetadataUart();
+#endif
 	}
 }
 
