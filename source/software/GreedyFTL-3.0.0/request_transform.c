@@ -53,6 +53,7 @@
 #include "nvme/host_lld.h"
 #include "memory_map.h"
 #include "ftl_config.h"
+#include "address_translation.h"
 
 P_ROW_ADDR_DEPENDENCY_TABLE rowAddrDependencyTablePtr;
 
@@ -165,12 +166,19 @@ void ReqTransNvmeToSlice(unsigned int cmdSlotTag, unsigned int startLba, unsigne
 void EvictDataBufEntry(unsigned int originReqSlotTag)
 {
 	unsigned int reqSlotTag, virtualSliceAddr, dataBufEntry;
-
+	P_VIRTUAL_BLOCK_ENTRY targetBlock;
+	
 	dataBufEntry = reqPoolPtr->reqPool[originReqSlotTag].dataBufInfo.entry;
 	if(dataBufMapPtr->dataBuf[dataBufEntry].dirty == DATA_BUF_DIRTY)
 	{
 		reqSlotTag = GetFromFreeReqQ();
 		virtualSliceAddr =  AddrTransWrite(dataBufMapPtr->dataBuf[dataBufEntry].logicalSliceAddr);
+
+		targetBlock = &virtualBlockMapPtr->
+			block[Vsa2VdieTranslation(virtualSliceAddr)][Vsa2VblockTranslation(virtualSliceAddr)];
+
+		if(targetBlock->mtime < dataBufMapPtr->dataBuf[dataBufEntry].writeStamp)
+			targetBlock->mtime = dataBufMapPtr->dataBuf[dataBufEntry].writeStamp;
 
 		reqPoolPtr->reqPool[reqSlotTag].reqType = REQ_TYPE_NAND;
 		reqPoolPtr->reqPool[reqSlotTag].reqCode = REQ_CODE_WRITE;
