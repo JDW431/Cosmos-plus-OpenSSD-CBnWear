@@ -119,7 +119,7 @@ void handle_nvme_io_write(unsigned int cmdSlotTag, NVME_IO_COMMAND *nvmeIOCmd)
 	currentPageWrite += sliceCount;
 	writeStamp = currentPageWrite;
 	
-	ReqTransNvmeToSlice(cmdSlotTag, startLba[0], nlb, IO_NVM_WRITE, writeStamp)
+	ReqTransNvmeToSlice(cmdSlotTag, startLba[0], nlb, IO_NVM_WRITE, writeStamp);
 }
 
 void handle_nvme_io_cmd(NVME_COMMAND *nvmeCmd)
