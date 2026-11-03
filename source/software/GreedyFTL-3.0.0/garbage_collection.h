@@ -48,6 +48,7 @@
 #define GARBAGE_COLLECTION_H_
 #define CB_SCORE_SCALE 1024ULL
 #define GC_VICTIM_COUNT 10
+#define GC_TRIGGER_FREE_BLOCK_COUNT 50
 
 #include "ftl_config.h"
 
