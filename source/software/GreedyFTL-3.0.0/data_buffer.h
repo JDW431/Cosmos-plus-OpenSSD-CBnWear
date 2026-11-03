@@ -69,6 +69,7 @@ typedef struct _DATA_BUF_ENTRY {
 	unsigned int hashNextEntry : 16;
 	unsigned int dirty : 1;
 	unsigned int reserved0 : 15;
+	unsigned int writeStamp;
 } DATA_BUF_ENTRY, *P_DATA_BUF_ENTRY;
 
 typedef struct _DATA_BUF_MAP{
