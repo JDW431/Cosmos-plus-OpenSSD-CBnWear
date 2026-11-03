@@ -247,6 +247,7 @@ void ReqTransSliceToLowLevel()
 
 			//clear the allocated data buffer entry being used by a previous request
 			EvictDataBufEntry(reqSlotTag);
+			dataBufMapPtr->dataBuf[dataBufEntry].writeStamp = 0;
 
 			//update meta-data of the allocated data buffer entry
 			dataBufMapPtr->dataBuf[dataBufEntry].logicalSliceAddr = reqPoolPtr->reqPool[reqSlotTag].logicalSliceAddr;
@@ -263,6 +264,10 @@ void ReqTransSliceToLowLevel()
 		if(reqPoolPtr->reqPool[reqSlotTag].reqCode  == REQ_CODE_WRITE)
 		{
 			dataBufMapPtr->dataBuf[dataBufEntry].dirty = DATA_BUF_DIRTY;
+			
+			if(dataBufMapPtr->dataBuf[dataBufEntry].writeStamp < reqPoolPtr->reqPool[reqSlotTag].writeStamp)
+				dataBufMapPtr->dataBuf[dataBufEntry].writeStamp = reqPoolPtr->reqPool[reqSlotTag].writeStamp;
+			
 			reqPoolPtr->reqPool[reqSlotTag].reqCode = REQ_CODE_RxDMA;
 		}
 		else if(reqPoolPtr->reqPool[reqSlotTag].reqCode  == REQ_CODE_READ)
