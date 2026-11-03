@@ -94,6 +94,8 @@ void handle_nvme_io_write(unsigned int cmdSlotTag, NVME_IO_COMMAND *nvmeIOCmd)
 	//IO_READ_COMMAND_DW15 writeInfo15;
 	unsigned int startLba[2];
 	unsigned int nlb;
+	unsigned short sliceCount;
+	unsigned int writeStamp;
 
 	writeInfo12.dword = nvmeIOCmd->dword[12];
 	//writeInfo13.dword = nvmeIOCmd->dword[13];
@@ -105,8 +107,6 @@ void handle_nvme_io_write(unsigned int cmdSlotTag, NVME_IO_COMMAND *nvmeIOCmd)
 	startLba[0] = nvmeIOCmd->dword[10];
 	startLba[1] = nvmeIOCmd->dword[11];
 	nlb = writeInfo12.NLB;
-	unsigned short sliceCount;
-	unsigned int writeStamp;
 
 	ASSERT(startLba[0] < storageCapacity_L && (startLba[1] < STORAGE_CAPACITY_H || startLba[1] == 0));
 	//ASSERT(nlb < MAX_NUM_OF_NLB);
