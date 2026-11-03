@@ -68,6 +68,25 @@
 
 #include "../memory_map.h"
 
+/* Enable only when the SDK BSP maps stdin/stdout to the same PS UART. */
+#ifdef METADATA_UART_PS
+#include "xuartps_hw.h"
+#include "../metadata_export.h"
+static MetadataExport metadataScan;
+
+static void WriteMetadataLine(const char *line)
+{
+    xil_printf("%s", line);
+}
+
+static void PollMetadataUart(void)
+{
+    if (XUartPs_IsReceiveData(STDIN_BASEADDRESS))
+        MetadataReceiveByte(&metadataScan, XUartPs_RecvByte(STDIN_BASEADDRESS), WriteMetadataLine);
+    MetadataStep(&metadataScan, 0, WriteMetadataLine);
+}
+#endif
+
 volatile NVME_CONTEXT g_nvmeTask;
 
 void nvme_main()
@@ -179,6 +198,9 @@ void nvme_main()
 			CheckDoneNvmeDmaReq();
 			SchedulingNandReq();
 		}
+#ifdef METADATA_UART_PS
+		PollMetadataUart();
+#endif
 	}
 }
 
