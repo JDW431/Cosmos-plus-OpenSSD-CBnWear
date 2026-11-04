@@ -1,34 +1,31 @@
 #!/usr/bin/env bash
-# Receive the firmware's UART metadata export and publish blocks.csv in RUN_DIR.
+# Linux/Ubuntu helper: collect a complete firmware metadata export over UART.
 set -euo pipefail
 
-if [[ $# -lt 1 || $# -gt 2 ]]; then
-    echo "Usage: $0 experiment.conf [run_dir]" >&2
+if [[ $# -ne 2 ]]; then
+    echo "Usage: $0 experiment.conf run_dir" >&2
     exit 2
 fi
+
+CONFIG_PATH="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+RUN_DIR="$2"
+if [[ "$RUN_DIR" != /* ]]; then
+    RUN_DIR="$(pwd)/$RUN_DIR"
+fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck disable=SC1090
-source "$1"
-RUN_DIR="${2:-$RUN_DIR}"
+source "$CONFIG_PATH"
 
-CONFIG_DIR="$(cd "$(dirname "$1")" && pwd)"
-if [[ "$COLLECT_EXE" != /* ]]; then
-    COLLECT_EXE="$CONFIG_DIR/$COLLECT_EXE"
-fi
-
-mkdir -p "$RUN_DIR"
-if [[ ! -x "$COLLECT_EXE" ]]; then
-    echo "COLLECT_EXE is not executable: $COLLECT_EXE" >&2
+if [[ ! -c "$UART_DEVICE" ]]; then
+    echo "UART_DEVICE is not a character device: $UART_DEVICE" >&2
+    echo "Connect the board's USB-UART adapter to this Ubuntu host and set the matching /dev/tty* path." >&2
     exit 2
 fi
 
-COLLECT_PATH="$(cd "$(dirname "$COLLECT_EXE")" && pwd)/$(basename "$COLLECT_EXE")"
-METADATA_DIR=metadata
-if [[ -e "$RUN_DIR/$METADATA_DIR" ]]; then
-    echo "Metadata directory already exists: $RUN_DIR/$METADATA_DIR" >&2
-    exit 2
-fi
-
-# collect.exe itself creates a new directory, so run it from RUN_DIR and give it
-# a fresh child directory name.
-(cd "$RUN_DIR" && "$COLLECT_PATH" "$UART_PORT" "$UART_BAUD" "$METADATA_DIR")
+mkdir -p "$RUN_DIR/metadata"
+python3 "$SCRIPT_DIR/collect_metadata.py" \
+    --device "$UART_DEVICE" \
+    --baud "$UART_BAUD" \
+    --idle-timeout "$UART_IDLE_TIMEOUT_SECONDS" \
+    --output-dir "$RUN_DIR/metadata"
