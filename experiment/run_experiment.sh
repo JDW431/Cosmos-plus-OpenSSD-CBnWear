@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 # Run workload, collect one complete metadata snapshot, then create the plots.
-# Ubuntu host: run each workload, import its CSV collected on the SDK laptop,
-# and create the plots.
+# Ubuntu host: run each workload, collect metadata over UART, and create plots.
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then
@@ -26,6 +25,11 @@ if [[ ! -b "$TARGET_PATH" ]]; then
     echo "Set TARGET_PATH to the OpenSSD device on the Ubuntu host." >&2
     exit 2
 fi
+if [[ ! -c "$UART_DEVICE" ]]; then
+    echo "UART_DEVICE is not a character device: $UART_DEVICE" >&2
+    echo "Connect the board UART adapter to Ubuntu and set its /dev/tty* path." >&2
+    exit 2
+fi
 if ! command -v fio >/dev/null 2>&1; then
     echo "fio is not installed or not on PATH." >&2
     exit 2
@@ -35,9 +39,9 @@ if ! command -v python3 >/dev/null 2>&1; then
     exit 2
 fi
 
-echo "Ubuntu workload + SDK laptop metadata collection"
+echo "Ubuntu workload + UART metadata collection"
 echo "Target device: $TARGET_PATH"
-echo "Laptop UART port: $UART_PORT at $UART_BAUD baud"
+echo "UART device: $UART_DEVICE at $UART_BAUD baud"
 echo "The fio write workloads can overwrite data on the target device."
 read -r -p "Type the exact device path to continue [$TARGET_PATH]: " TARGET_CONFIRM
 if [[ "$TARGET_CONFIRM" != "$TARGET_PATH" ]]; then
@@ -65,15 +69,8 @@ for WORKLOAD_MODE in "${WORKLOAD_MODES[@]}"; do
     "$SCRIPT_DIR/collect_metadata.sh" "$CONFIG_PATH" "$RUN_DIR"
     bash "$SCRIPT_DIR/workload.sh" "$CONFIG_PATH" "$WORKLOAD_MODE" "$RUN_DIR"
 
-    CAPTURE_NAME="${WORKLOAD_MODE}_threshold_${AGE_THRESHOLD}_capture"
-    echo
-    echo "On the SDK laptop, close the SDK UART Terminal and collect this workload's metadata:"
-    echo "  $COLLECT_EXE $UART_PORT $UART_BAUD $CAPTURE_NAME"
-    echo "The collector creates $CAPTURE_NAME/blocks.csv on the laptop."
-    echo "Copy that CSV to a location accessible from Ubuntu (USB/shared folder/network)."
-    read -r -p "Enter the Ubuntu-visible path to blocks.csv: " METADATA_CSV
-    METADATA_CSV="${METADATA_CSV/#\~/$HOME}"
-    bash "$SCRIPT_DIR/collect_metadata.sh" "$RUN_DIR" "$METADATA_CSV"
+    echo "Collecting metadata from OpenSSD over $UART_DEVICE"
+    bash "$SCRIPT_DIR/collect_metadata.sh" "$CONFIG_PATH" "$RUN_DIR"
     python3 "$SCRIPT_DIR/plot_results.py" \
         --blocks "$RUN_DIR/metadata/blocks.csv" \
         --threshold "$AGE_THRESHOLD" \
