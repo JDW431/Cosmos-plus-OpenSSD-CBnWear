@@ -8,12 +8,16 @@ if [[ $# -ne 1 ]]; then
 fi
 
 CONFIG_PATH="$(cd "$(dirname "$1")" && pwd)/$(basename "$1")"
+CONFIG_DIR="$(dirname "$CONFIG_PATH")"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # shellcheck disable=SC1090
 source "$CONFIG_PATH"
 
 WORKLOAD_MODES=(seq_write seq_read rand_write rand_read)
+if [[ "$RUNS_ROOT" != /* ]]; then
+    RUNS_ROOT="$CONFIG_DIR/$RUNS_ROOT"
+fi
 mkdir -p "$RUNS_ROOT"
 
 for WORKLOAD_MODE in "${WORKLOAD_MODES[@]}"; do
