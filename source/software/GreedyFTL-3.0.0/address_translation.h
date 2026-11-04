@@ -69,6 +69,14 @@
 #define GET_FREE_BLOCK_NORMAL	0x0
 #define GET_FREE_BLOCK_GC		0x1
 
+/*
+ * Experiment parameter: change this value for each hot/cold run.
+ * A GC group with age > GC_AGE_THRESHOLD is treated as cold and is
+ * placed in the most-worn available free block.  Other non-zero ages
+ * are treated as hot and are placed in the least-worn available block.
+ */
+#define GC_AGE_THRESHOLD	1000U
+
 #define BLOCK_STATE_NORMAL						0
 #define BLOCK_STATE_BAD							1
 
