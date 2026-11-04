@@ -96,7 +96,7 @@ def collect(device, baud, idle_timeout, output_dir):
         text=True,
     ).stdout.strip()
     subprocess.run(
-        ["stty", "-F", device, str(baud), "raw", "-echo", "-ixon", "-ixoff", "-crtscts", "-flush"],
+        ["stty", "-F", device, str(baud), "raw", "-echo"],
         check=True,
     )
     fd = os.open(device, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
