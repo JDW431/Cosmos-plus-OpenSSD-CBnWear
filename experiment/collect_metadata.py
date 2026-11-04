@@ -6,10 +6,9 @@ import csv
 import os
 import select
 import stat
+import subprocess
 import sys
-import termios
 import time
-import tty
 from pathlib import Path
 
 
@@ -80,10 +79,6 @@ def parse_line(line, state):
 def collect(device, baud, idle_timeout, output_dir):
     if not os.path.exists(device) or not stat.S_ISCHR(os.stat(device).st_mode):
         raise ValueError(f"UART device is not a character device: {device}")
-    baud_constant = getattr(termios, f"B{baud}", None)
-    if baud_constant is None:
-        raise ValueError(f"unsupported baud rate: {baud}")
-
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     csv_path = output_dir / "blocks.csv"
@@ -92,21 +87,22 @@ def collect(device, baud, idle_timeout, output_dir):
     if csv_path.exists() or partial_path.exists() or log_path.exists():
         raise ValueError(f"output files already exist in {output_dir}; use a fresh run directory")
 
+    # Use the system `stty` utility to configure the UART. This avoids importing
+    # Python's termios extension, which may be unavailable or damaged on Ubuntu.
+    old_settings = subprocess.run(
+        ["stty", "-F", device, "-g"],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+    subprocess.run(
+        ["stty", "-F", device, str(baud), "raw", "-echo", "-ixon", "-ixoff", "-crtscts", "-flush"],
+        check=True,
+    )
     fd = os.open(device, os.O_RDWR | os.O_NOCTTY | os.O_NONBLOCK)
-    old_attrs = termios.tcgetattr(fd)
     state = {"dies": None, "blocks": None, "rows": 0, "complete": False}
     pending = bytearray()
     try:
-        tty.setraw(fd, termios.TCSANOW)
-        attrs = termios.tcgetattr(fd)
-        attrs[2] = (attrs[2] & ~(termios.PARENB | termios.CSTOPB | termios.CSIZE)) | termios.CS8 | termios.CREAD | termios.CLOCAL
-        attrs[4] = baud_constant
-        attrs[5] = baud_constant
-        attrs[6][termios.VMIN] = 0
-        attrs[6][termios.VTIME] = 0
-        termios.tcsetattr(fd, termios.TCSANOW, attrs)
-        termios.tcflush(fd, termios.TCIFLUSH)
-
         with open(log_path, "wb") as raw_log, open(partial_path, "w", newline="", encoding="ascii") as csv_file:
             writer = csv.writer(csv_file, lineterminator="\n")
             writer.writerow(CSV_FIELDS)
@@ -158,8 +154,8 @@ def collect(device, baud, idle_timeout, output_dir):
         os.replace(partial_path, csv_path)
         print(f"Collected {state['rows']} blocks -> {csv_path}")
     finally:
-        termios.tcsetattr(fd, termios.TCSANOW, old_attrs)
         os.close(fd)
+        subprocess.run(["stty", "-F", device, old_settings], check=False)
 
 
 def main():
@@ -173,7 +169,7 @@ def main():
         parser.error("--idle-timeout must be positive")
     try:
         collect(args.device, args.baud, args.idle_timeout, args.output_dir)
-    except (OSError, ValueError, TimeoutError, termios.error) as exc:
+    except (OSError, ValueError, TimeoutError, subprocess.CalledProcessError) as exc:
         print(f"Metadata collection failed: {exc}", file=sys.stderr)
         return 1
     return 0
