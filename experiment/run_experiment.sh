@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Run workload, collect one complete metadata snapshot, then create the plots.
-# Ubuntu host: run each workload, pause for Windows laptop UART collection,
-# import the resulting blocks.csv, then create the plots.
+# Ubuntu host: run each workload, collect metadata over the local UART adapter,
+# and create the plots.
 set -euo pipefail
 
 if [[ $# -ne 1 ]]; then
@@ -26,6 +26,11 @@ if [[ ! -b "$TARGET_PATH" ]]; then
     echo "Set TARGET_PATH to the OpenSSD device on the Ubuntu host." >&2
     exit 2
 fi
+if [[ ! -c "$UART_DEVICE" ]]; then
+    echo "UART_DEVICE is not a character device: $UART_DEVICE" >&2
+    echo "Connect the OpenSSD USB-UART adapter to Ubuntu and set its /dev/tty* path before starting." >&2
+    exit 2
+fi
 if ! command -v fio >/dev/null 2>&1; then
     echo "fio is not installed or not on PATH." >&2
     exit 2
@@ -35,9 +40,10 @@ if ! command -v python3 >/dev/null 2>&1; then
     exit 2
 fi
 
-echo "Ubuntu Host PC experiment"
+echo "Ubuntu-only experiment"
 echo "Target device: $TARGET_PATH"
-echo "The fio write workloads can overwrite data on this device."
+echo "UART device: $UART_DEVICE"
+echo "The fio write workloads can overwrite data on the target device."
 read -r -p "Type the exact device path to continue [$TARGET_PATH]: " TARGET_CONFIRM
 if [[ "$TARGET_CONFIRM" != "$TARGET_PATH" ]]; then
     echo "Target confirmation did not match; stopping." >&2
@@ -64,32 +70,8 @@ for WORKLOAD_MODE in "${WORKLOAD_MODES[@]}"; do
     "$SCRIPT_DIR/collect_metadata.sh" "$CONFIG_PATH" "$RUN_DIR"
     bash "$SCRIPT_DIR/workload.sh" "$CONFIG_PATH" "$WORKLOAD_MODE" "$RUN_DIR"
 
-    CAPTURE_NAME="${WORKLOAD_MODE}_threshold_${AGE_THRESHOLD}_capture"
-    echo
-    echo "Now collect this workload's UART metadata on the Windows SDK laptop."
-    echo "Disconnect/close the SDK UART terminal first so collect.exe can open the COM port."
-    echo "From the folder containing collect.exe, run:"
-    echo "  collect.exe $UART_PORT $UART_BAUD $CAPTURE_NAME"
-    echo "The CSV will be at: $CAPTURE_NAME/blocks.csv"
-    echo "Copy it to the Ubuntu host (USB/shared folder), then enter its Ubuntu path here."
-    read -r -p "Enter the blocks.csv path visible on Ubuntu: " METADATA_CSV
-    METADATA_CSV="${METADATA_CSV/#\~/$HOME}"
-    if [[ ! -f "$METADATA_CSV" ]]; then
-        echo "CSV file not found: $METADATA_CSV" >&2
-        echo "Copy the laptop's blocks.csv to Ubuntu, then rerun this experiment." >&2
-        exit 2
-    fi
-
-    CSV_HEADER="$(head -n 1 "$METADATA_CSV" | tr -d '\r')"
-    EXPECTED_HEADER="die,virtual_block,erase_count,age,bad,free"
-    if [[ "$CSV_HEADER" != "$EXPECTED_HEADER" ]]; then
-        echo "Unexpected blocks.csv header: $CSV_HEADER" >&2
-        echo "Expected: $EXPECTED_HEADER" >&2
-        exit 2
-    fi
-
-    mkdir -p "$RUN_DIR/metadata"
-    cp "$METADATA_CSV" "$RUN_DIR/metadata/blocks.csv"
+    echo "Collecting metadata from OpenSSD over $UART_DEVICE"
+    bash "$SCRIPT_DIR/collect_metadata.sh" "$CONFIG_PATH" "$RUN_DIR"
     python3 "$SCRIPT_DIR/plot_results.py" \
         --blocks "$RUN_DIR/metadata/blocks.csv" \
         --threshold "$AGE_THRESHOLD" \
