@@ -11,6 +11,11 @@ fi
 source "$1"
 RUN_DIR="${2:-$RUN_DIR}"
 
+CONFIG_DIR="$(cd "$(dirname "$1")" && pwd)"
+if [[ "$COLLECT_EXE" != /* ]]; then
+    COLLECT_EXE="$CONFIG_DIR/$COLLECT_EXE"
+fi
+
 mkdir -p "$RUN_DIR"
 if [[ ! -x "$COLLECT_EXE" ]]; then
     echo "COLLECT_EXE is not executable: $COLLECT_EXE" >&2
