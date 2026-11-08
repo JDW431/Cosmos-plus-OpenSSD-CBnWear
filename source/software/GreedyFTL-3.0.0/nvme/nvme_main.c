@@ -69,6 +69,7 @@
 #include "../memory_map.h"
 
 /* Enable only when the SDK BSP maps stdin/stdout to the same PS UART. */
+#define METADATA_UART_PS
 #ifdef METADATA_UART_PS
 #include "xuartps_hw.h"
 #include "../metadata_export.h"
